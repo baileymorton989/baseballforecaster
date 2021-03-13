@@ -11,7 +11,11 @@ Installation will soon be made simple by using [pip](https://pip.pypa.io/en/stab
 ```bash
 pip install baseballforecaster
 ```
-For now, you can simply clone the repo and run the script.
+For now you can simply clone the repo and run the following:
+
+```bash
+pip install -e .
+```
 
 ## Usage
 
