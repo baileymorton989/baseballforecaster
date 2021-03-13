@@ -6,7 +6,7 @@ The `Forecaster` module is the standard method for full-season forecasting and d
 
 Finally, we adapt a [monte carlo search tree](https://github.com/ykeuter/ffl/blob/master/notebooks/mcts.ipynb) approach for drafting players to accurately value position importance, performance, and risk. An excel file of the results is then saved for further analysis. 
 
-We will continue to allow for greater flexbility and complexity as we develop and improve these techniques. You can further explore the source code in the [src](https://github.com/baileymorton989/baseballforecaster) folder.
+We will continue to allow for greater flexbility and complexity as we develop and improve these techniques. You can further explore the source code in the [src](https://github.com/baileymorton989/baseballforecaster/tree/master/src) folder.
 
 ## Installation
 
