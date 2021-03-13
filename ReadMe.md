@@ -1,6 +1,6 @@
 ﻿# baseballforecaster
 
-`baseballforecaster` is a Python library built on top of [pybaseball](https://github.com/jldbc/pybaseball) for forecasting baseball performance and simulating fantasy baseball drafts. Currently, full-season monte carlo-based forecasting and drafting is available to generate risk-adjusted players to more accurately measure performance. We are developing in-season monte carlo-based forecasting, full season and in-season lookup-based forecasting, as well as full-season and in-season ML-based forecasting.
+`baseballforecaster` is a Python library built on top of [pybaseball](https://github.com/jldbc/pybaseball) for forecasting baseball performance and simulating fantasy baseball [drafts](https://github.com/ykeuter/ffl/blob/master/notebooks/mcts.ipynb). Currently, full-season monte carlo-based forecasting and drafting is available to generate risk-adjusted players to more accurately measure performance. We are developing in-season monte carlo-based forecasting, full season and in-season lookup-based forecasting, as well as full-season and in-season ML-based forecasting.
 
 The `Forecaster` module is the standard method for full-season forecasting and drafting. The user can select the time period for analysis, the number of simulations, number of draft rounds, number of drafters, and number of draft iterations. We will continue to allow for greater flexbility and complexity as we develop and improve these techniques. You can further explore the source code in the [src](https://github.com/baileymorton989/baseballforecaster) folder.
 
