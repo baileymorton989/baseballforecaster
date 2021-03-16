@@ -23,7 +23,7 @@ pip install -e .
 
 ## Usage
 
-Here is a simple example using `Forecaster` We will use the `pybaseball` library to scrape and consolidate the data and we can use `tkinter` to provide a simple GUI for the user to enter the time period for analysis, the number of simulations, draft rounds, number of drafters, draft iterations, and the exploration factor. All results are conveniently stored as [pandas](https://pandas.pydata.org/) dataframes for further analysis 
+Here is a simple example using `Forecaster` We will use the `pybaseball` library to scrape and consolidate the data and we can use `tkinter` to provide a simple GUI for the user to enter the time period for analysis, the number of simulations, draft rounds, number of drafters, draft iterations, and the exploration factor. Then, just pass in the `Forecaster` object into the `Drafter` object to use the forecasted player scores to simulate the a fantasy baseball draft. All results are then conveniently stored as [pandas](https://pandas.pydata.org/) dataframes for further analysis 
 
 `Forecaster` Example : 
 
