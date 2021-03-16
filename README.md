@@ -10,7 +10,7 @@ We will continue to allow for greater flexbility and complexity as we develop an
 
 ## Installation
 
-Installation will soon be made simple by using [pip](https://pip.pypa.io/en/stable/):
+Installation is made simple by using [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
 pip install baseballforecaster
