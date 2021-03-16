@@ -15,7 +15,7 @@ Installation is made simple by using [pip](https://pip.pypa.io/en/stable/):
 ```bash
 pip install baseballforecaster
 ```
-For now you can simply clone the repo and run the following:
+You can also simply clone the repo and run the following:
 
 ```bash
 pip install -e .
