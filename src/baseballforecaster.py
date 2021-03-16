@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 15 19:56:59 2021
+
+@author: bam3k
+"""
+
 #for data cleaning and analysis
 import pandas as pd
 import numpy as np
@@ -570,7 +577,76 @@ class DraftState:
         self.turns = turns
         self.freeagents = freeagents
         self.playerJustMoved = playerjm
-
+        
+    #create weights the so algorithm can choose relative to which positions they have chosen from
+    def GetResult(self, playerjm):
+        """ Get the game result from the viewpoint of playerjm.
+        """
+        if playerjm is None: return 0
+        
+        pos_wgts = {
+            ("SP"): [.9, .9, .9 ,.6, .6 ,.6],
+            ("RP"): [.8, .7, .6, .5,.5],
+            ("C"): [.6,.4],
+            ("1B"): [.7,],
+            ("2B"): [.7, .6],
+            ("SS"): [.7, .6],
+            ("3B"): [.7, .6],
+            ("1B", "2B", "3B", "SS", "OF", "C"): [.6],
+            ("1B", "2B", "3B", "SS"): [.6],
+            ("OF"): [.7,.7,.7,.5,.4],
+        }
+    
+        result = 0
+        # map the drafted players to the weights
+        for p in self.rosters[playerjm]:
+            max_wgt, _, max_pos, old_wgts = max(
+                ((wgts[0], -len(lineup_pos), lineup_pos, wgts) for lineup_pos, wgts in pos_wgts.items()
+                    if p.position in lineup_pos),
+                default=(0, 0, (), []))
+            if max_wgt > 0:
+                result += max_wgt * p.points
+                old_wgts.pop(0)
+                if not old_wgts:
+                    pos_wgts.pop(max_pos)
+                    
+        # map the remaining weights to the top three free agents
+        for pos, wgts in pos_wgts.items():
+            result += np.mean([p.points for p in self.freeagents if p.position in pos][:3]) * sum(wgts)
+            
+        return result
+            
+    #possible moves for each state, given the position
+    def GetMoves(self):
+        """ Get all possible moves from this state.
+        """
+        pos_max = {"SP": 6, "RP": 5, "1B": 1, "C":2, "2B":2 , "3B":2, "SS": 2, "OF":5}
+    
+        if len(self.turns) == 0: return []
+    
+        roster_positions = np.array([p.position for p in self.rosters[self.turns[0]]], dtype=str)
+        moves = [pos for pos, max_ in pos_max.items() if np.sum(roster_positions == pos) < max_]
+        return moves
+    
+    #update states after each move
+    def DoMove(self, move):
+        """ Update a state by carrying out the given move.
+            Must update playerJustMoved.
+        """
+        player = next(p for p in self.freeagents if p.position == move)
+        self.freeagents.remove(player)
+        rosterId = self.turns.pop(0)
+        self.rosters[rosterId].append(player)
+        self.playerJustMoved = rosterId
+        
+    def Clone(self):
+        """ Create a deep clone of this game state.
+        """
+        rosters = list(map(lambda r: r[:], self.rosters))
+        st = DraftState(rosters, self.turns[:], self.freeagents[:],
+                self.playerJustMoved)
+        return st
+        
 #create a player object with relevant attributes
 class MLBPlayer:
     def __init__(self, name, position, points):
@@ -581,85 +657,8 @@ class MLBPlayer:
     def __repr__(self):
         return "|".join([self.name, self.position, str(self.points)])
     
-#create weights the so algorithm can choose relative to which positions they have chosen from
-def GetResult(self, playerjm):
-    """ Get the game result from the viewpoint of playerjm.
-    """
-    if playerjm is None: return 0
-    
-    pos_wgts = {
-        ("SP"): [.9, .9, .9 ,.6, .6 ,.6],
-        ("RP"): [.8, .7, .6, .5,.5],
-        ("C"): [.6,.4],
-        ("1B"): [.7,],
-        ("2B"): [.7, .6],
-        ("SS"): [.7, .6],
-        ("3B"): [.7, .6],
-        ("1B", "2B", "3B", "SS", "OF", "C"): [.6],
-        ("1B", "2B", "3B", "SS"): [.6],
-        ("OF"): [.7,.7,.7,.5,.4],
-    }
-
-    result = 0
-    # map the drafted players to the weights
-    for p in self.rosters[playerjm]:
-        max_wgt, _, max_pos, old_wgts = max(
-            ((wgts[0], -len(lineup_pos), lineup_pos, wgts) for lineup_pos, wgts in pos_wgts.items()
-                if p.position in lineup_pos),
-            default=(0, 0, (), []))
-        if max_wgt > 0:
-            result += max_wgt * p.points
-            old_wgts.pop(0)
-            if not old_wgts:
-                pos_wgts.pop(max_pos)
-                
-    # map the remaining weights to the top three free agents
-    for pos, wgts in pos_wgts.items():
-        result += np.mean([p.points for p in self.freeagents if p.position in pos][:3]) * sum(wgts)
-        
-    return result
-        
-# DraftState.GetResult = GetResult
-
-#possible moves for each state, given the position
-def GetMoves(self):
-    """ Get all possible moves from this state.
-    """
-    pos_max = {"SP": 6, "RP": 5, "1B": 1, "C":2, "2B":2 , "3B":2, "SS": 2, "OF":5}
-
-    if len(self.turns) == 0: return []
-
-    roster_positions = np.array([p.position for p in self.rosters[self.turns[0]]], dtype=str)
-    moves = [pos for pos, max_ in pos_max.items() if np.sum(roster_positions == pos) < max_]
-    return moves
-
-# DraftState.GetMoves = GetMoves
-
-#update states after each move
-def DoMove(self, move):
-    """ Update a state by carrying out the given move.
-        Must update playerJustMoved.
-    """
-    player = next(p for p in self.freeagents if p.position == move)
-    self.freeagents.remove(player)
-    rosterId = self.turns.pop(0)
-    self.rosters[rosterId].append(player)
-    self.playerJustMoved = rosterId
-    
-# DraftState.DoMove = DoMove
-
-def Clone(self):
-    """ Create a deep clone of this game state.
-    """
-    rosters = list(map(lambda r: r[:], self.rosters))
-    st = DraftState(rosters, self.turns[:], self.freeagents[:],
-            self.playerJustMoved)
-    return st
-
-# DraftState.Clone = Clone
-
-# This is a very simple implementation of the UCT Monte Carlo Tree Search algorithm in Python 2.7.
-# The function UCT(rootstate, itermax, verbose = False) is towards the bottom of the code.
+# This is a very simple implementation of the uct Monte Carlo Tree Search algorithm in Python 2.7.
+# The function uct(rootstate, itermax, verbose = False) is towards the bottom of the code.
 # It aims to have the clearest and simplest possible code, and for the sake of clarity, the code
 # is orders of magnitude less efficient than it could be made, particularly by using a 
 # state.GetRandomMove() or state.DoRandomRollout() function.
@@ -684,13 +683,13 @@ class Node:
         self.untriedMoves = state.GetMoves() # future child nodes
         self.playerJustMoved = state.playerJustMoved # the only part of the state that the Node needs later
         
-    def UCTSelectChild(self):
-        """ Use the UCB1 formula to select a child node. Often a constant UCTK is applied so we have
-            lambda c: c.wins/c.visits + UCTK * sqrt(2*log(self.visits)/c.visits to vary the amount of
+    def uctSelectChild(self):
+        """ Use the UCB1 formula to select a child node. Often a constant uctK is applied so we have
+            lambda c: c.wins/c.visits + uctK * sqrt(2*log(self.visits)/c.visits to vary the amount of
             exploration versus exploitation.
         """
-        UCTK = 1000 #200 #2000 #100 #20000 
-        s = sorted(self.childNodes, key = lambda c: c.wins/c.visits + UCTK * math.sqrt(2*math.log(self.visits)/c.visits))[-1]
+        uctK = 1000 #200 #2000 #100 #20000 
+        s = sorted(self.childNodes, key = lambda c: c.wins/c.visits + uctK * math.sqrt(2*math.log(self.visits)/c.visits))[-1]
         return s
     
     def AddChild(self, m, s):
@@ -709,8 +708,8 @@ class Node:
         self.wins += result
 
 
-def UCT(rootstate, itermax, verbose = False):
-    """ Conduct a UCT search for itermax iterations starting from rootstate.
+def uct(rootstate, itermax, verbose = False):
+    """ Conduct a uct search for itermax iterations starting from rootstate.
         Return the best move from the rootstate.
     """
 
@@ -722,7 +721,7 @@ def UCT(rootstate, itermax, verbose = False):
 
         # Select
         while node.untriedMoves == [] and node.childNodes != []: # node is fully expanded and non-terminal
-            node = node.UCTSelectChild()
+            node = node.uctSelectChild()
             state.DoMove(node.move)
 
         # Expand
@@ -742,104 +741,114 @@ def UCT(rootstate, itermax, verbose = False):
 
     return sorted(rootnode.childNodes, key = lambda c: c.visits)[-1].move # return the move that was most visited
 
-#prepare the draft
-def prepare_draft(DraftState) : 
-    #create position weights for drafting importance
-    DraftState.GetResult = GetResult
-
-    #assign possible moves for each player at each state
-    DraftState.GetMoves = GetMoves
-
-    #update states of the draft after each move
-    DraftState.DoMove = DoMove
-
-    #create a deep clone of this game state
-    DraftState.Clone = Clone
+class Drafter(DraftState):
     
-    return DraftState
-
-#simulate a fantasy faseball draft
-def draft(forecaster, MLBPlayer, DraftState, UCT) : 
-    print('')
-    print('Drafting')
-    print('')
-    #import projections
-    forecaster.all_players.set_index('IDfg', inplace = True)
-    forecaster.mlb_players = forecaster.all_players
-    freeagents = [MLBPlayer(*p) for p in forecaster.mlb_players.itertuples(index=False, name=None)]
-
-    #create draft competitors
-    num_competitors = forecaster.num_competitors
-    rosters = [[] for _ in range(num_competitors)] # empty rosters to start with
-
-    #create number of rounds and turns
-    num_rounds = forecaster.num_rounds
-    turns = []
-    # generate turns by snake order
-    for i in range(num_rounds):
-        turns += reversed(range(num_competitors)) if i % 2 else range(num_competitors)
+    def __init__(self, forecaster, draftstate = DraftState, mlbplayer = MLBPlayer, uct = uct):
+        self.forecaster = forecaster
+        self.draftstate = draftstate
+        self.mlbplayer = mlbplayer
+        self.uct = uct
+    
+    #prepare the draft
+    def prepare_draft(self) : 
+        #create position weights for drafting importance
+        self.draftstsate.GetResult = self.draftstate.GetResult()
+    
+        #assign possible moves for each player at each state
+        self.draftstsate.GetMoves = self.draftstate.GetMoves()
+    
+        #update states of the draft after each move
+        self.draftstsate.DoMove = self.draftstate.DoMove()
+    
+        #create a deep clone of this game state
+        self.draftstsate.Clone = self.draftstate.Clone()
         
-    #create draft states
-    state = DraftState(rosters, turns, freeagents)
-    iterations = forecaster.num_iterations
-    while state.GetMoves() != []:
-        move = UCT(state, iterations)
-        print(move, end=".")
-        state.DoMove(move)
-    print('')
-    print('Draft Complete')
-    #draft results
-    return pd.DataFrame({"Team " + str(i + 1): r for i, r in enumerate(state.rosters)})
-
-#convert the dataframes to excel sheets
-def excel_converter(forecaster, draft_results):
+        return self.draftstsate
     
-    #excel file
-    writer = pd.ExcelWriter(f'C:\\Users\\{forecaster.user}\\Downloads\\{end_time.year +1}_Projections_{forecaster.today}.xlsx')
+    #simulate a fantasy faseball draft
+    def draft(self) : 
+        print('')
+        print('Drafting')
+        print('')
+        #import projections
+        self.forecaster.all_players.set_index('IDfg', inplace = True)
+        self.forecaster.mlb_players = self.forecaster.all_players
+        freeagents = [self.mlbplayer(*p) for p in self.forecaster.mlb_players.itertuples(index=False, name=None)]
     
-    #Drafting
-    draft_results.to_excel(writer, sheet_name = 'Mock Draft',index = False)
+        #create draft competitors
+        num_competitors = self.forecaster.num_competitors
+        rosters = [[] for _ in range(num_competitors)] # empty rosters to start with
     
-    #full list
-    forecaster.all_players.to_excel(writer, sheet_name = 'All Players',index = False)
+        #create number of rounds and turns
+        num_rounds = self.forecaster.num_rounds
+        turns = []
+        # generate turns by snake order
+        for i in range(num_rounds):
+            turns += reversed(range(num_competitors)) if i % 2 else range(num_competitors)
+            
+        #create draft states
+        state = self.draftstate(rosters, turns, freeagents)
+        iterations = self.forecaster.num_iterations
+        while state.GetMoves() != []:
+            move = self.uct(state, iterations)
+            print(move, end=".")
+            state.DoMove(move)
+        print('')
+        print('Draft Complete')
+        
+        #draft results
+        self.draft_results  = pd.DataFrame({"Team " + str(i + 1): r for i, r in enumerate(state.rosters)})
+        return self.draft_results
     
-    #risk-adjusted
-    forecaster.risk_adjusted_batters.to_excel(writer, sheet_name = 'Risk Adjusted Batters',index = False)
-    forecaster.risk_adjusted_starters.to_excel(writer, sheet_name = 'Risk Adjusted Starters',index = False)
-    forecaster.risk_adjusted_relief.to_excel(writer, sheet_name = 'Risk Adjusted Relief',index = False)
-    forecaster.risk_adjusted_closers.to_excel(writer, sheet_name = 'Risk Adjusted Closers',index = False)
-
-    #points
-    forecaster.sample_batters.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_batters.to_excel(writer, sheet_name='Batters Projection',index = False)
-    forecaster.sample_starting_pitchers.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_starting_pitchers.to_excel(writer, sheet_name='Starters Projection',index = False)
-    forecaster.sample_relief_pitchers.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_relief_pitchers.to_excel(writer, sheet_name='Relievers Projection',index = False)
-    forecaster.sample_closers.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_closers.to_excel(writer, sheet_name='Closers Projection',index = False)
+    #convert the dataframes to excel sheets
+    def excel_converter(self):
+        
+        #excel file
+        writer = pd.ExcelWriter(f'C:\\Users\\{self.forecaster.user}\\Downloads\\{end_time.year +1}_Projections_{self.forecaster.today}.xlsx')
+        
+        #Drafting
+        self.draft_results.to_excel(writer, sheet_name = 'Mock Draft',index = False)
+        
+        #full list
+        self.forecaster.all_players.to_excel(writer, sheet_name = 'All Players',index = False)
+        
+        #risk-adjusted
+        self.forecaster.risk_adjusted_batters.to_excel(writer, sheet_name = 'Risk Adjusted Batters',index = False)
+        self.forecaster.risk_adjusted_starters.to_excel(writer, sheet_name = 'Risk Adjusted Starters',index = False)
+        self.forecaster.risk_adjusted_relief.to_excel(writer, sheet_name = 'Risk Adjusted Relief',index = False)
+        self.forecaster.risk_adjusted_closers.to_excel(writer, sheet_name = 'Risk Adjusted Closers',index = False)
     
-    #risk
-    forecaster.sample_batters_risk.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_batters_risk.to_excel(writer, sheet_name='Batters Risk',index = False)
-    forecaster.sample_starting_pitchers_risk.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_starting_pitchers_risk.to_excel(writer, sheet_name='Starters Risk',index = False)
-    forecaster.sample_relief_pitchers_risk.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_relief_pitchers_risk.to_excel(writer, sheet_name='Relievers Risk',index = False)
-    forecaster.sample_closers_risk.drop(columns = ['IDfg'], inplace = True)
-    forecaster.sample_closers_risk.to_excel(writer, sheet_name='Closers Risk',index = False)
+        #points
+        self.forecaster.sample_batters.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_batters.to_excel(writer, sheet_name='Batters Projection',index = False)
+        self.forecaster.sample_starting_pitchers.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_starting_pitchers.to_excel(writer, sheet_name='Starters Projection',index = False)
+        self.forecaster.sample_relief_pitchers.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_relief_pitchers.to_excel(writer, sheet_name='Relievers Projection',index = False)
+        self.forecaster.sample_closers.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_closers.to_excel(writer, sheet_name='Closers Projection',index = False)
+        
+        #risk
+        self.forecaster.sample_batters_risk.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_batters_risk.to_excel(writer, sheet_name='Batters Risk',index = False)
+        self.forecaster.sample_starting_pitchers_risk.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_starting_pitchers_risk.to_excel(writer, sheet_name='Starters Risk',index = False)
+        self.forecaster.sample_relief_pitchers_risk.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_relief_pitchers_risk.to_excel(writer, sheet_name='Relievers Risk',index = False)
+        self.forecaster.sample_closers_risk.drop(columns = ['IDfg'], inplace = True)
+        self.forecaster.sample_closers_risk.to_excel(writer, sheet_name='Closers Risk',index = False)
+        
+        #clusters
+        self.forecaster.cluster_finder_batter.to_excel(writer, sheet_name = 'Batter Clusters',index = False)
+        self.forecaster.cluster_finder_starting_pitcher.to_excel(writer, sheet_name = 'Starting Clusters',index = False)
+        self.forecaster.cluster_finder_relief_pitcher.to_excel(writer, sheet_name = 'Relief Clusters',index = False)
+        self.forecaster.cluster_finder_closer.to_excel(writer, sheet_name = 'Closer Clusters',index = False)
+          
+        #save file
+        writer.save()
+        
+        return self.forecaster
     
-    #clusters
-    forecaster.cluster_finder_batter.to_excel(writer, sheet_name = 'Batter Clusters',index = False)
-    forecaster.cluster_finder_starting_pitcher.to_excel(writer, sheet_name = 'Starting Clusters',index = False)
-    forecaster.cluster_finder_relief_pitcher.to_excel(writer, sheet_name = 'Relief Clusters',index = False)
-    forecaster.cluster_finder_closer.to_excel(writer, sheet_name = 'Closer Clusters',index = False)
-      
-    #save file
-    writer.save()
-    
-    return forecaster
-
-#call the excel converter
-def call_converter(forecaster, draft_results):
-    return excel_converter(forecaster, draft_results)
+    #call the excel converter
+    def call_converter(self):
+        return self.excel_converter()
