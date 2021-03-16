@@ -1,5 +1,5 @@
 #import the libraries
-from baseballforecaster import Forecaster, DraftState, prepare_draft, draft, MLBPlayer, UCT, excel_converter
+from baseballforecaster import Forecaster, Drafter
 
 #perform the analysis:
 if __name__ == "__main__":
@@ -10,11 +10,11 @@ if __name__ == "__main__":
     #perform monte carlo simulation to forecast player performance
     forecaster.monte_carlo_forecast()
     
-    #prepare draft
-    DraftState = prepare_draft(DraftState)
-
-    #simulate a fantasy baseball draft
-    draft_results = draft(forecaster, MLBPlayer, DraftState, UCT)
+    #define the drafter object
+    drafter = Drafter(forecaster)
     
-    #save the file
-    forecaster = excel_converter(forecaster, draft_results)
+    #simulate a fantasy baseball draft
+    drafter.draft()
+    
+    #save the forecasting, clustering, and drafting results
+    drafter.excel_converter()
