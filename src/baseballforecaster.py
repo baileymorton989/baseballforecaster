@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 15 19:56:59 2021
-
-@author: bam3k
-"""
-
 #for data cleaning and analysis
 import pandas as pd
 import numpy as np
@@ -141,11 +134,14 @@ def make_period_dicts(dictionary):
 #forecaster class
 class Forecaster:
 
-    def __init__(self):
+    def __init__(self, simulations, num_competitors, num_rounds, num_iterations,years):
         self.user = getpass.getuser()
         self.today = date.today().strftime("%m_%d_%y")
-        self.simulations, self.num_competitors, self.num_rounds, self.num_iterations = entry()
-        self.years = get_dates()
+        self.simulations = simulations
+        self.num_competitors = num_competitors
+        self.num_rounds = num_rounds
+        self.num_iterations = num_iterations
+        self.years = years
         print('Downloading Data')
         print('')
         self.seasons_dict_batter, self.seasons_dict_pitcher = make_period_dicts(self.years)
