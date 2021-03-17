@@ -1,14 +1,17 @@
 #import the libraries
-from baseballforecaster import Forecaster, Drafter
+from baseballforecaster import Forecaster, Drafter, entry, get_dates
 
 #perform the analysis:
 if __name__ == "__main__":
+    
+    #get parameters for forecasting
+    simulations, num_competitors, num_rounds, num_iterations = entry()
+    
+    #get the time period for forecastings
+    time_period = get_dates()
 
     #create Forecaster object
-    forecaster = Forecaster()
-
-    #perform monte carlo simulation to forecast player performance
-    forecaster.monte_carlo_forecast()
+    forecaster = Forecaster(simulations, num_competitors, num_rounds, num_iterations,time_period)
     
     #define the drafter object
     drafter = Drafter(forecaster)
