@@ -421,7 +421,6 @@ class Forecaster:
         self.sample_relief_pitchers, self.sample_relief_pitchers_risk  = sample_averager(self.full_relievers, self.simulations)
         self.sample_closers, self.sample_closers_risk = sample_averager(self.full_closers, self.simulations)
 
-
         #get the dataframes for fantasy points
         #for point totals
         self.sample_batters = merge_dict(self.sample_batters, self.batter_columns)
