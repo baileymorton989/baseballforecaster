@@ -13,6 +13,9 @@ if __name__ == "__main__":
     #create Forecaster object
     forecaster = Forecaster(simulations, num_competitors, num_rounds, num_iterations,time_period)
     
+    #run the forecast
+    forecaster.monte_carlo_forecast()
+    
     #define the drafter object
     drafter = Drafter(forecaster)
     
